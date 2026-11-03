@@ -36,7 +36,7 @@ class RolePermissionSeeder extends Seeder
             && $permission !== 'complaints.export'
         ));
 
-        $operator = ['dashboard.view', 'complaints.view', 'complaints.update'];
+        $operator = ['dashboard.view', 'complaints.view', 'complaints.update', 'complaints.manage_categories'];
         foreach ($modules as $module) {
             $operator[] = "{$module}.view";
             $operator[] = "{$module}.create";
