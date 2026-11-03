@@ -13,59 +13,53 @@ class RolePermissionSeeder extends Seeder
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $permissions = [
-            'dashboard.view',
-            'news.view',
-            'news.create',
-            'news.update',
-            'news.delete',
-            'gallery.view',
-            'gallery.create',
-            'gallery.update',
-            'gallery.delete',
-            'settings.manage',
-            'users.manage',
-            'complaints.view',
-            'complaints.update',
-            'complaints.assign',
-            'complaints.view_identity',
-            'complaints.view_sensitive_identity',
-            'complaints.view_attachments',
-            'complaints.export',
-            'complaints.manage_categories',
-        ];
+        $modules = ['news', 'gallery', 'services', 'achievements', 'faqs', 'testimonials'];
+        $permissions = ['dashboard.view', 'settings.manage', 'users.manage', 'complaints.view',
+            'complaints.update', 'complaints.assign', 'complaints.view_identity',
+            'complaints.view_sensitive_identity', 'complaints.view_attachments',
+            'complaints.export', 'complaints.manage_categories'];
+
+        foreach ($modules as $module) {
+            foreach (['view', 'create', 'update', 'delete'] as $action) {
+                $permissions[] = "{$module}.{$action}";
+            }
+        }
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
+        $all = $permissions;
+        $admin = array_values(array_filter($permissions, fn (string $permission) =>
+            $permission !== 'settings.manage' && $permission !== 'users.manage'
+            && $permission !== 'complaints.view_sensitive_identity'
+            && $permission !== 'complaints.export'
+        ));
+
+        $operator = ['dashboard.view', 'complaints.view', 'complaints.update'];
+        foreach ($modules as $module) {
+            $operator[] = "{$module}.view";
+            $operator[] = "{$module}.create";
+            $operator[] = "{$module}.update";
+        }
+
+        $guru = ['dashboard.view', 'complaints.view'];
+        foreach ($modules as $module) {
+            $guru[] = "{$module}.view";
+        }
+
         $roles = [
-            'superadmin' => $permissions,
-            'admin' => [
-                'dashboard.view',
-                'news.view', 'news.create', 'news.update', 'news.delete',
-                'gallery.view', 'gallery.create', 'gallery.update', 'gallery.delete',
-                'complaints.view', 'complaints.update', 'complaints.assign',
-                'complaints.view_identity', 'complaints.view_attachments',
-                'complaints.manage_categories',
-            ],
-            'operator' => [
-                'dashboard.view',
-                'news.view', 'news.create', 'news.update',
-                'gallery.view', 'gallery.create', 'gallery.update',
-                'complaints.view', 'complaints.update',
-            ],
-            'guru' => [
-                'dashboard.view',
-                'news.view',
-                'gallery.view',
-                'complaints.view',
-            ],
+            'superadmin' => $all,
+            'admin' => $admin,
+            'operator' => $operator,
+            'guru' => $guru,
         ];
 
         foreach ($roles as $roleName => $rolePermissions) {
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
             $role->syncPermissions($rolePermissions);
         }
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }
